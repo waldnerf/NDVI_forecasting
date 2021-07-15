@@ -84,16 +84,17 @@ class CustomRunner_vRNN(dl.Runner):
 class CustomRunner_ForecastNet(dl.Runner):
     def handle_batch(self, batch):
         x, y = batch
+        x = torch.unsqueeze(x, 2)
+        y = torch.unsqueeze(y, 2)
         x = x.permute(1, 0, 2)
         in_seq_length, batch_size, input_dim = x.shape
-        x = torch.reshape(x, (batch_size, -1))
-
+        x_modified = torch.reshape(x, (batch_size, -1))
         y = y.permute(1, 0, 2)
 
         if self.is_train_loader:
-            outputs = self.model(x, y, 0.5)
+            outputs = self.model(x_modified, y, 0.5)
         else:
-            outputs = self.model(x)
+            outputs = self.model(x_modified)
 
         loss = F.mse_loss(outputs, y)
         # output_numpy = output.cpu().data.numpy()
@@ -123,20 +124,24 @@ if __name__ == "__main__":
     DEC_Layers = 2
     LR = 0.005  # learning rate
     EPOCHS = 20
-    BATCH_SIZE = 256
+    BATCH_SIZE = 128
     BATCH_SIZE_INF = 1
     FIG_FLAG = False
-    MODEL = 'vRNN'
+    MODEL = 'vRNN' #'ForecastNet'  #'vRNN'
     params = cst.params[MODEL]
     out_filename = f'./data/forecasts_{MODEL}.csv'
     season_filename = f'./data/season_accuracy_{MODEL}.csv'
     df_out = pd.DataFrame(list(product(range(3, 36, 3), range(2004, 2017))), columns=['step', 'year'])
 
     df_out['mse'] = np.nan
-    df_out['recall_normal'] = np.nan
-    df_out['recall_critical'] = np.nan
-    df_out['precision_normal'] = np.nan
-    df_out['precision_critical'] = np.nan
+    df_out['recall_normal_f'] = np.nan
+    df_out['recall_critical_f'] = np.nan
+    df_out['precision_normal_f'] = np.nan
+    df_out['precision_critical_f'] = np.nan
+    df_out['recall_normal_nf'] = np.nan
+    df_out['recall_critical_nf'] = np.nan
+    df_out['precision_normal_nf'] = np.nan
+    df_out['precision_critical_nf'] = np.nan
 
     data_path = './data/afi_bins_2000_random_Algeria.csv'
 
@@ -191,10 +196,13 @@ if __name__ == "__main__":
         # model, criterion, optimizer, scheduler
         # model, criterion, optimizer, scheduler
         if MODEL == 'vRNN':
-            encoder = EncoderRNN(params['INPUT_DIM'], params['ENC_HID_DIM'], params['ECN_Layers'])
-            decoder = DecoderRNN(params['INPUT_DIM'], params['DEC_HID_DIM'], params['DEC_Layers'],
-                                 params['FC_Units'], params['OUTPUT_DIM'])
-            model = VanillaRNN(encoder, decoder, train_target_single.shape[1], device)
+            #encoder = EncoderRNN(params['INPUT_DIM'], params['ENC_HID_DIM'], params['ECN_Layers'])
+            #decoder = DecoderRNN(params['INPUT_DIM'], params['DEC_HID_DIM'], params['DEC_Layers'],
+            #                    params['FC_Units'], params['OUTPUT_DIM'])
+            model = VanillaRNN(params['INPUT_DIM'], params['ENC_HID_DIM'], params['ECN_Layers'],
+                               params['DEC_HID_DIM'], params['DEC_Layers'],
+                               params['FC_Units'], params['OUTPUT_DIM'], train_target_single.shape[1],
+                               'GRU', 0.2, True, device)
             runner = CustomRunner_vRNN()
         elif MODEL == 'ForecastNet':
             model = ForecastNetConvModel2(input_dim=params['INPUT_DIM'], hidden_dim=params['ENC_HID_DIM'],
@@ -246,6 +254,7 @@ if __name__ == "__main__":
 
         anomaly_obs = []
         anomaly_preds = []
+        anomaly_nopreds = []
 
         sos_list = []
         eos_list = []
@@ -260,6 +269,12 @@ if __name__ == "__main__":
                 x = torch.unsqueeze(x, 2)
                 y = torch.unsqueeze(y, 2)
                 outputs = model(x)  # , y, 0)
+            elif MODEL == 'LSTM':
+                x = torch.unsqueeze(x, 2)
+                y = torch.unsqueeze(y, 2)
+                x = x.permute(1, 0, 2)
+                y = y.permute(1, 0, 2)
+                outputs = model(x, teacher_forcing_ratio=0)
             elif MODEL == 'ForecastNet':
                 x = torch.unsqueeze(x, 2)
                 y = torch.unsqueeze(y, 2)
@@ -267,9 +282,8 @@ if __name__ == "__main__":
                 in_seq_length, batch_size, input_dim = x.shape
                 x_modified = torch.reshape(x, (batch_size, -1))
                 y = y.permute(1, 0, 2)
-                outputs = model(x_modified)
 
-                outputs, mu, sigma = model(x, x, y)
+                outputs = model(x_modified)
 
             original_x = x[:, :, 0]
 
@@ -289,9 +303,11 @@ if __name__ == "__main__":
             ndvi_seq = np.concatenate((np.squeeze(x_numpy), np.squeeze(output_numpy)), axis=0)
             auc = compute_auc(ndvi_seq, data_test['sos'][i], data_test['eos'][i])
             pred_outlook = classify_season(data_test['auc_dist'][i, :], auc)
+            nopred_outlook = classify_season(data_test['auc_dist_incomplete'][i, :], data_test['auc_incomplete'][i])
             act_outlook = classify_season(data_test['auc_dist'][i, :], data_test['auc'][i])
             anomaly_obs.append(act_outlook)
             anomaly_preds.append(pred_outlook)
+            anomaly_nopreds.append(nopred_outlook)
             sos_list.append(data_test['sos'][i])
             eos_list.append(data_test['eos'][i])
             tos_list.append(np.squeeze(x_numpy).shape[0])
@@ -300,19 +316,30 @@ if __name__ == "__main__":
 
         # Format and save results
         df_seas = pd.DataFrame({'sos': sos_list, 'eos': eos_list, 'tos': tos_list,
-                                'anomaly_true': anomaly_obs, 'anomaly_pred': anomaly_preds, 'mse': loss_list})
+                                'anomaly_true': anomaly_obs, 'anomaly_pred': anomaly_preds,
+                                'anomaly_nopred': anomaly_nopreds, 'mse': loss_list})
         season_list.append(df_seas)
 
-        # Anomaly classification analysis
+        # Anomaly classification -- With NDVI forecasts
         cm = confusion_matrix(anomaly_obs, anomaly_preds)
-        prec_scores = precision_score(anomaly_obs, anomaly_preds, average=None)
+        prec_scores = precision_score(anomaly_obs, anomaly_nopreds, average=None)
         recall_scores = recall_score(anomaly_obs, anomaly_preds, average=None)
 
         df_out.loc[df_out.index == index, 'mse'] = statistics.mean(loss_list)
-        df_out.loc[df_out.index == index, 'recall_normal'] = recall_scores[0]
-        df_out.loc[df_out.index == index, 'recall_critical'] = recall_scores[1]
-        df_out.loc[df_out.index == index, 'precision_normal'] = prec_scores[0]
-        df_out.loc[df_out.index == index, 'precision_critical'] = prec_scores[1]
+        df_out.loc[df_out.index == index, 'recall_normal_f'] = recall_scores[0]
+        df_out.loc[df_out.index == index, 'recall_critical_f'] = recall_scores[1]
+        df_out.loc[df_out.index == index, 'precision_normal_f'] = prec_scores[0]
+        df_out.loc[df_out.index == index, 'precision_critical_f'] = prec_scores[1]
+
+        # Anomaly classification -- Without NDVI forecasts
+        cm = confusion_matrix(anomaly_obs, anomaly_nopreds)
+        prec_scores = precision_score(anomaly_obs, anomaly_nopreds, average=None)
+        recall_scores = recall_score(anomaly_obs, anomaly_nopreds, average=None)
+
+        df_out.loc[df_out.index == index, 'recall_normal_nf'] = recall_scores[0]
+        df_out.loc[df_out.index == index, 'recall_critical_nf'] = recall_scores[1]
+        df_out.loc[df_out.index == index, 'precision_normal_nf'] = prec_scores[0]
+        df_out.loc[df_out.index == index, 'precision_critical_nf'] = prec_scores[1]
 
         ####### plot some test resutls ##########
         inputs_x = np.squeeze(np.array(input_x))  # Input NDVI

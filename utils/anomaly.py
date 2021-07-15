@@ -1,7 +1,7 @@
 import numpy as np
 
 def compute_auc(seq, sos, eos):
-    return np.sum(seq[sos:eos+1])
+    return np.sum(seq[sos:eos])
 
 def classify_season(cumValDist, cumVal):
     """
