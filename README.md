@@ -17,6 +17,18 @@ https://github.com/waldnerf/NDVI_forecasting.git
 cd NDVI_forecasting
 ```
 
+If you want to save the performance of your models on [wandb](https://wandb.ai/site), you will need to link your account by either doing:
+```
+>> wandb login
+```
+or 
+```
+python
+import wandb
+wandb.login()
+```
+and follow the instructions.
+
 ## Content
 
 Below is the architecture of the folder. Code in `run_model.py` is used to train a model, and `evaluate_model.py` serves for model evaluation. The different models that are available can be found in `nn/models`
