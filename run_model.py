@@ -31,6 +31,7 @@ from itertools import product
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
+import wandb
 
 sns.set_style("darkgrid")
 mpl.use('tkagg')
@@ -127,8 +128,10 @@ if __name__ == "__main__":
     BATCH_SIZE = 128
     BATCH_SIZE_INF = 1
     FIG_FLAG = False
+    MONITOR
     MODEL = 'vRNN' #'ForecastNet'  #'vRNN'
     params = cst.params[MODEL]
+    
     out_filename = f'./data/forecasts_{MODEL}.csv'
     season_filename = f'./data/season_accuracy_{MODEL}.csv'
     df_out = pd.DataFrame(list(product(range(3, 36, 3), range(2004, 2017))), columns=['step', 'year'])
@@ -214,7 +217,11 @@ if __name__ == "__main__":
 
         print(model)
         print(f'The model has {count_parameters(model):,} trainable parameters')
-
+        
+        # Magic
+        if MONITOR:
+            wandb.watch(model)
+        
         # AdamW
         optimizer = torch.optim.Adam(model.parameters(), lr=LR, betas=(0.9, 0.999))
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
