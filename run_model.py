@@ -199,7 +199,7 @@ if __name__ == "__main__":
             #encoder = EncoderRNN(params['INPUT_DIM'], params['ENC_HID_DIM'], params['ECN_Layers'])
             #decoder = DecoderRNN(params['INPUT_DIM'], params['DEC_HID_DIM'], params['DEC_Layers'],
             #                    params['FC_Units'], params['OUTPUT_DIM'])
-            model = VanillaRNN(params['INPUT_DIM'], params['ENC_HID_DIM'], params['ECN_Layers'],
+            model = VanillaRNN(params['INPUT_DIM'], params['ENC_HID_DIM'], params['ENC_Layers'],
                                params['DEC_HID_DIM'], params['DEC_Layers'],
                                params['FC_Units'], params['OUTPUT_DIM'], train_target_single.shape[1],
                                'GRU', 0.2, True, device)
