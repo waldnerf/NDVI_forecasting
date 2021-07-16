@@ -223,8 +223,7 @@ if __name__ == "__main__":
             # 1. Start a W&B run
             wandb.init(project='yieldforecasting')
             # 2. Save model inputs and hyperparameters
-            wandb.config.update({"INPUT_DIM": INPUT_DIM, "OUTPUT_DIM": OUTPUT_DIM)#, "SUPPORT_DIM": SUPPORT_DIM,"EPOCHS": EPOCHS, "BATCH_SIZE": BATCH_SIZE,"ENC_HID_DIM": ENC_HID_DIM, "DEC_HID_DIM": DEC_HID_DIM, "dropout_p": ENC_DROPOUT,"ECN_Layers":ECN_Layers,"DEC_Layers":DEC_Layers,"LR":LR})
-
+            wandb.config.update({"INPUT_DIM": INPUT_DIM, "OUTPUT_DIM": OUTPUT_DIM})#, "SUPPORT_DIM": SUPPORT_DIM,"EPOCHS": EPOCHS, "BATCH_SIZE": BATCH_SIZE,"ENC_HID_DIM": ENC_HID_DIM, "DEC_HID_DIM": DEC_HID_DIM, "dropout_p": ENC_DROPOUT,"ECN_Layers":ECN_Layers,"DEC_Layers":DEC_Layers,"LR":LR})
             wandb.watch(model)
         
         # AdamW
