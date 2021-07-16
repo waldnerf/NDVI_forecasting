@@ -128,7 +128,7 @@ if __name__ == "__main__":
     BATCH_SIZE = 128
     BATCH_SIZE_INF = 1
     FIG_FLAG = False
-    MONITOR
+    MONITOR = True
     MODEL = 'vRNN' #'ForecastNet'  #'vRNN'
     params = cst.params[MODEL]
     
