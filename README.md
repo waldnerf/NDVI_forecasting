@@ -6,6 +6,7 @@ Create the `ndviforecasting` environment with the following dependencies:
 ```
 conda create -n ndviforecasting python==3.8.8
 conda activate ndviforecasting
+pip install torch==1.9.0+cu102 torchvision==0.10.0+cu102 torchaudio===0.9.0 h5py -f https://download.pytorch.org/whl/torch_stable.html
 pip install git+https://github.com/catalyst-team/catalyst.git
 conda install pandas matplotlib scikit-learn
 pip install wandb
