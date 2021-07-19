@@ -32,7 +32,7 @@ wandb.login()
 and follow the instructions.
 
 You can also run the code in Colab
-[![Open In Colab for training](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github.com/waldnerf/NDVI_forecasting/blob/main/run_model.ipynb)
+[![Open In Colab for training](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1QRjeANLL3h0r4ax_Fp5iDkMwLQtisYK6?usp=sharing)
 
 ## Content
 
