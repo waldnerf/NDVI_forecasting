@@ -134,7 +134,7 @@ if __name__ == "__main__":
     
     out_filename = f'./data/forecasts_{MODEL}.csv'
     season_filename = f'./data/season_accuracy_{MODEL}.csv'
-    df_out = pd.DataFrame(list(product(range(3, 36, 3), range(2004, 2017))), columns=['step', 'year'])
+    df_out = pd.DataFrame(list(product(range(3, 36, 3), range(2004, 2017))), columns=['step', 'year']) # TODO up to 2019???
 
     df_out['mse'] = np.nan
     df_out['recall_normal_f'] = np.nan
